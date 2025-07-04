@@ -1,0 +1,8 @@
+[package]
+name = "marcosdly/bitmask"
+description = "Arbitrary precision bitmask library for Roblox Lua"
+version = "0.1.0"
+registry = "https://github.com/UpliftGames/wally-index"
+realm = "shared"
+repository = "https://github.com/marcosdly/bitmask"
+include = ['bitmask']
