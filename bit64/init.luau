@@ -172,4 +172,30 @@ function M.rrotate(n: number, i: number): number
   return (left * (2 ^ (bitwidth - i))) + right
 end
 
+--[=[
+  Shifts `n` to the left by `i` bits (if `i` is negative, a right shift is performed instead).
+  When i is outside of [-63..63] range, returns 0.
+  @param n number
+  @param i number
+  @return number
+]=]
+function M.lshift(n: number, i: number): number
+  if i < -bitwidth or i > bitwidth then return 0 end
+  if i < 0 then return M.rshift(n, -i) end
+  return n * (2 ^ i)
+end
+
+--[=[
+  Shifts `n` to the right by `i` bits (if `i` is negative, a left shift is performed instead).
+  When i is outside of [-63..63] range, returns 0.
+  @param n number
+  @param i number
+  @return number
+]=]
+function M.rshift(n: number, i: number): number
+  if i < -bitwidth or i > bitwidth then return 0 end
+  if i < 0 then return M.lshift(n, -i) end
+  return n // (2 ^ i)
+end
+
 return M
