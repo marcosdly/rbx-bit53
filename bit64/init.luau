@@ -157,6 +157,29 @@ function M.lrotate(n: number, i: number): number
 end
 
 --[=[
+  Shifts `n` by `i` bits to the right (if `i` is negative, a left shift is performed instead).
+  The most significant bit of `n` is propagated during the shift. When `i` is larger than `63`, returns
+  an integer with all bits set to the sign bit of `n`. When `i` is smaller than `-63`, `0` is returned.
+  @param n number
+  @param i number
+  @return number
+]=]
+function M.arshift(n: number, i: number): number
+  if i < -bitwidth or i > bitwidth then return 0 end
+  if i < 0 then return M.lshift(n, -i) end
+
+  local signBit = (n // (2 ^ (bitwidth - 1))) % 2
+  local result = n // (2 ^ i)
+
+  -- If the sign bit is set, propagate it
+  if signBit == 1 then
+    result += (2 ^ (bitwidth - i)) - 1
+  end
+
+  return result
+end
+
+--[=[
   Rotates `n` to the right by `i` bits (if `i` is negative, a left rotate is performed instead);
   the bits that are shifted past the bit width are shifted back from the left.
   @param n number
