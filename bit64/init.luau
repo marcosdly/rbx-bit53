@@ -1,3 +1,5 @@
+--!strict
+
 --[=[
   Module that implements arbitrary bitwise operations using plain arithmetic (brute force),
   instead of explicit bitshifting. These operations are unsafe in nature because the result
