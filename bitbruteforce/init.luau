@@ -106,4 +106,29 @@ function M.btest(...: number): boolean
   return M.band(...) ~= 0
 end
 
+--[=[
+  Extracts bits of `n` at position `f` with a width of `w`, and returns the resulting number.
+  `w` defaults to 1, so a two-argument version of extract returns the bit value at position `f`.
+  Bits are indexed starting at 0. Errors if `f` and `f+w-1` are not between 0 and 63.
+  @param n number
+  @param f number
+  @param w number?
+  @return number
+]=]
+function M.extract(n: number, f: number, w: number?): number
+  w = w or 1
+  if f < 0 or f + w - 1 > 63 then error('Field out of bounds: ' .. f .. ' to ' .. f + w - 1) end
+
+  -- Arithmetic loop
+  local result, power = 0, 1
+  for i = 0, w - 1 do
+    local bit = (n // (10 ^ (f + i))) % 2
+    if bit == 1 then
+      result += power
+    end
+    power *= 2
+  end
+  return result
+end
+
 return M
