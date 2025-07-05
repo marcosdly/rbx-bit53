@@ -112,30 +112,6 @@ function M.extract(buf: buffer, f: number, w: number?): buffer
   error('not implemented')
 end
 
---- Extract a single bit from `buf`. Returns either zero or 1 as a number.
--- @param buf buffer
--- @param f number
--- @return number
-function M.getbit(buf: buffer, f: number): number
-  error('not implemented')
-end
-
---- Extract a single bit from `buf` as boolean.
--- @param buf buffer
--- @param f number
--- @return boolean
-function M.getboolean(buf: buffer, f: number): boolean
-  error('not implemented')
-end
-
---- Sets all bits of `buf` to `bitvalue`, a number that is either zero or 1.
--- @param buf buffer
--- @param r number
--- @return buffer
-function M.fill(buf: buffer, r: number): buffer
-  error('not implemented')
-end
-
 -- @param buf buffer
 -- @param f number
 -- @param f number
