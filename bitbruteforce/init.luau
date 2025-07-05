@@ -96,4 +96,14 @@ function M.bxor(...: number): number
   return result
 end
 
+--[=[
+  Perform an unsafe, arithmetic based, brute force bitwise `and`, then return true if
+  called without arguments.
+  @param ... number
+  @return number
+]=]
+function M.btest(...: number): boolean
+  return M.band(...) ~= 0
+end
+
 return M
