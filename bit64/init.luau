@@ -9,6 +9,8 @@
 local M = {}
 
 local bitwidth = 64 -- max width of the bitmask, in bits
+local max_uint64 = 0xFFFFFFFFFFFFFFFF
+M.max_uint64 = max_uint64 -- export
 
 --[=[
   Performs a bitwise `and` of all input numbers and returns the result. If called without
