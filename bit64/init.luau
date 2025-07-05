@@ -9,8 +9,6 @@
 local M = {}
 
 local bitwidth = 64 -- max width of the bitmask, in bits
-local max_uint64 = 0xFFFFFFFFFFFFFFFF
-M.max_uint64 = max_uint64 -- export
 
 --[=[
   Performs a bitwise `and` of all input numbers and returns the result. If called without
@@ -328,6 +326,18 @@ function M.iota(w: number?): () -> number
     i = i + step
     return value
   end
+end
+
+--[=[
+  Returns the maximum unsigned integer that can be represented with `w` bits.
+  If `w` is not provided, defaults to `64`. Errors if `w` is outside of `[0..64]` range.
+  @param w number?
+  @return number
+]=]
+function M.maxuint(w: number?): number
+  w = w or bitwidth
+  if w < 0 or w > bitwidth then error('Width out of bounds: ' .. tostring(w)) end
+  return (2 ^ w) - 1
 end
 
 return M
