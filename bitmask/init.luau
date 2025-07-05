@@ -16,7 +16,7 @@ M.maxbytes = maxbytes
 --- Performs a bitwise `and` of all input numbers and returns the result.
 --- If the function is called with no arguments, a single byte buffer with all bits set to 1
 --- is returned.
--- @param ... buffer \ number
+-- @param ... buffer
 -- @return buffer
 function M.band(...: buffer): buffer
   error('not implemented')
@@ -35,7 +35,7 @@ end
 --- If the function is called with no arguments, is called with no arguments, a single
 --- byte buffer with all bits set to zero is returned.
 -- @param buf buffer
--- @param ... number
+-- @param ... buffer
 -- @return buffer
 function M.bxor(...: buffer): buffer
   error('not implemented')
@@ -105,43 +105,43 @@ end
 --- Bits are indexed starting at 0. Errors if `field` and `field+width-1` are not between 0 and
 --- `bitmask.MAX_BIT_LIMIT`.
 -- @param buf buffer
--- @param field number
--- @param width number
+-- @param f number
+-- @param w number
 -- @return number
-function M.extract(buf: buffer, field: number, width: number?): buffer
+function M.extract(buf: buffer, f: number, w: number?): buffer
   error('not implemented')
 end
 
 --- Extract a single bit from `buf`. Returns either zero or 1 as a number.
 -- @param buf buffer
--- @param field number
+-- @param f number
 -- @return number
-function M.getbit(buf: buffer, field: number): number
+function M.getbit(buf: buffer, f: number): number
   error('not implemented')
 end
 
 --- Extract a single bit from `buf` as boolean.
 -- @param buf buffer
--- @param field number
+-- @param f number
 -- @return boolean
-function M.getboolean(buf: buffer, field: number): boolean
+function M.getboolean(buf: buffer, f: number): boolean
   error('not implemented')
 end
 
 --- Sets all bits of `buf` to `bitvalue`, a number that is either zero or 1.
 -- @param buf buffer
--- @param biivalue number
+-- @param r number
 -- @return buffer
-function M.fill(buf: buffer, bitvalue: number): buffer
+function M.fill(buf: buffer, r: number): buffer
   error('not implemented')
 end
 
 -- @param buf buffer
--- @param bitvalue number
--- @param field number
--- @param width number
+-- @param f number
+-- @param f number
+-- @param w number
 -- @return buffer
-function M.replace(buf: buffer, bitvalue: number, field: number, width: number?): buffer
+function M.replace(buf: buffer, r: number, f: number, w: number?): buffer
   error('abstract')
 end
 
