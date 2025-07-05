@@ -174,7 +174,7 @@ end
 
 --[=[
   Shifts `n` to the left by `i` bits (if `i` is negative, a right shift is performed instead).
-  When i is outside of [-63..63] range, returns 0.
+  When i is outside of `[-63..63]` range, returns 0.
   @param n number
   @param i number
   @return number
@@ -187,7 +187,7 @@ end
 
 --[=[
   Shifts `n` to the right by `i` bits (if `i` is negative, a left shift is performed instead).
-  When i is outside of [-63..63] range, returns 0.
+  When i is outside of `[-63..63]` range, returns 0.
   @param n number
   @param i number
   @return number
@@ -196,6 +196,46 @@ function M.rshift(n: number, i: number): number
   if i < -bitwidth or i > bitwidth then return 0 end
   if i < 0 then return M.lshift(n, -i) end
   return n // (2 ^ i)
+end
+
+--[=[
+  Returns the number of consecutive zero bits in the 64-bit representation of `n` starting from the
+  left-most (most significant) bit. Returns `64` if `n` is zero.
+  @param n number
+  @return number
+]=]
+function M.countlz(n: number): number
+  if n == 0 then return bitwidth end
+
+  local count = 0
+  for i = bitwidth - 1, 0, -1 do
+    if (n // (2 ^ i)) % 2 == 0 then
+      count += 1
+    else
+      break
+    end
+  end
+  return count
+end
+
+--[=[
+  Returns the number of consecutive zero bits in the 64-bit representation of `n` starting from the
+  right-most (least significant) bit. Returns `64` if `n` is zero.
+  @param n number
+  @return number
+]=]
+function M.countrz(n: number): number
+  if n == 0 then return bitwidth end
+
+  local count = 0
+  for i = 0, bitwidth - 1 do
+    if (n // (2 ^ i)) % 2 == 0 then
+      count += 1
+    else
+      break
+    end
+  end
+  return count
 end
 
 return M
