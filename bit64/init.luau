@@ -156,4 +156,20 @@ function M.lrotate(n: number, i: number): number
   return (right * (2 ^ i)) + left
 end
 
+--[=[
+  Rotates `n` to the right by `i` bits (if `i` is negative, a left rotate is performed instead);
+  the bits that are shifted past the bit width are shifted back from the left.
+  @param n number
+  @param i number
+  @return number
+]=]
+function M.rrotate(n: number, i: number): number
+  i = i % bitwidth
+  if i < 0 then i = bitwidth + i end
+
+  local right = n // (2 ^ i)
+  local left = n % (2 ^ i)
+  return (left * (2 ^ (bitwidth - i))) + right
+end
+
 return M
