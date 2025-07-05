@@ -295,4 +295,37 @@ function M.byteswap(n: number): number
   return swapped
 end
 
+--[=[
+  Generator that returns 64-bit numbers from `1 << 0` to `1 << (w - 1)`. These numbers are similar to
+  enum int flags, meaning a single bit is set to `1` and all other bits are `0`.
+  If `w` is not provided, defaults to `64`. If `w` is `0`, returns an empty iterator.
+  If `w` is negative, returns an iterator that starts at `1 << 63` and ends at `1 << (63 + w)`.
+  Errors if `w` is outside of `[-63..63]` range.
+  @param w number?
+  @return () -> number
+]=]
+function M.iota(w: number?): () -> number
+  w = w or bitwidth
+  if w == 0 then
+    return function()
+      return nil
+    end
+  end
+  if w > bitwidth or w < -bitwidth then error('Width out of bounds: ' .. tostring(w)) end
+
+  local i, limit, step
+  if w > 0 then
+    i, limit, step = 0, w - 1, 1
+  else
+    i, limit, step = bitwidth - 1, bitwidth + w, -1
+  end
+
+  return function()
+    if (step > 0 and i > limit) or (step < 0 and i < limit) then return nil end
+    local value = 2 ^ i
+    i = i + step
+    return value
+  end
+end
+
 return M
