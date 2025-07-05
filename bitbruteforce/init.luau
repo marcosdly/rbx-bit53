@@ -1,20 +1,25 @@
 --[=[
-  Module that implements arbitrary bitwise operations using plain arithmetic, instead of
-  explicit bitshifting. This operations are unsafe in nature because the result of the
-  calculations depend on the interpreter's imposed limitations, e.g. every number in 
-  Roblox being `float64`, which limits integers to 53 bits.
+  Module that implements arbitrary bitwise operations using plain arithmetic (brute force),
+  instead of explicit bitshifting. These operations are unsafe in nature because the result
+  of the calculations depend on the interpreter's imposed limitations, e.g. every number in
+  Roblox being `float64`, which limits integers to 53 bits, so number representation can't
+  be guaranteed if you don't account for implementation details.
 ]=]
 
 local M = {}
 
 --[=[
-  Unsafe, arithmetic based, brute force bitwise `and`. If called without arguments,
-  returns zero. If called with a single argument, return it as is.
+  Performs a bitwise `and` of all input numbers and returns the result. If called without
+  arguments, returns a 64bit number with all bits set to 1. If called with a single argument,
+  return it as is.
   @param ... number
   @return number
 ]=]
 function M.band(...: number): number
-  if #... == 0 then return 0 end
+  if #... == 0 then
+    local _32ones = bit32.bnot(0)
+    return M.band(_32ones, _32ones * 2 ^ 32)
+  end
   if #... == 1 then return table.unpack(...) end
 
   local result = 0
@@ -37,7 +42,7 @@ function M.band(...: number): number
 end
 
 --[=[
-  Unsafe, arithmetic based, brute force bitwise `or`. If called without arguments,
+  Performs a bitwise `or` of all input numbers and returns the result. If called without arguments,
   returns zero. If called with a single argument, return it as is.
   @param ... number
   @return number
@@ -67,7 +72,7 @@ function M.bor(...: number): number
 end
 
 --[=[
-  Unsafe, arithmetic based, brute force bitwise `xor`. If called without arguments,
+  Performs a bitwise `xor` of all input numbers and returns the result. If called without arguments,
   returns zero. If called with a single argument, return it as is.
   @param ... number
   @return number
@@ -97,8 +102,8 @@ function M.bxor(...: number): number
 end
 
 --[=[
-  Perform an unsafe, arithmetic based, brute force bitwise `and`, then return true if
-  called without arguments.
+  Performs a bitwise`and` of all input numbers, and return `true` if the result is not zero.
+  If called without arguments, returns `true`.
   @param ... number
   @return number
 ]=]
