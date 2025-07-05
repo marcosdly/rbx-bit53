@@ -238,4 +238,18 @@ function M.countrz(n: number): number
   return count
 end
 
+--[=[
+  Returns the 64-bit representation of `n` with the order of the bytes swapped.
+  @param n number
+  @return number
+]=]
+function M.byteswap(n: number): number
+  local swapped = 0
+  for i = 0, bitwidth - 1, 8 do
+    local byte = (n // (2 ^ i)) % 256
+    swapped += byte * (2 ^ (bitwidth - 8 - i))
+  end
+  return swapped
+end
+
 return M
