@@ -8,6 +8,8 @@
 
 local M = {}
 
+local bitwidth = 64 -- max width of the bitmask, in bits
+
 --[=[
   Performs a bitwise `and` of all input numbers and returns the result. If called without
   arguments, returns a 64bit number with all bits set to 1. If called with a single argument,
@@ -122,7 +124,9 @@ end
 ]=]
 function M.extract(n: number, f: number, w: number?): number
   w = w or 1
-  if f < 0 or f + w - 1 > 63 then error('Field out of bounds: ' .. f .. ' to ' .. f + w - 1) end
+  if f < 0 or f + w > bitwidth then
+    error('Field out of bounds: ' .. f .. ' to ' .. bitwidth - 1)
+  end
 
   -- Arithmetic loop
   local result, power = 0, 1
@@ -134,6 +138,22 @@ function M.extract(n: number, f: number, w: number?): number
     power *= 2
   end
   return result
+end
+
+--[=[
+  Rotates `n` to the left by `i` bits (if `i` is negative, a right rotate is performed instead);
+  the bits that are shifted past the bit width are shifted back from the right.
+  @param n number
+  @param i number
+  @return number
+]=]
+function M.lrotate(n: number, i: number): number
+  i = i % bitwidth
+  if i < 0 then i = bitwidth + i end
+
+  local left = n // (2 ^ (bitwidth - i))
+  local right = n % (2 ^ (bitwidth - i))
+  return (right * (2 ^ i)) + left
 end
 
 return M
