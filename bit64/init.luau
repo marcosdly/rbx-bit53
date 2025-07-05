@@ -141,6 +141,26 @@ function M.extract(n: number, f: number, w: number?): number
 end
 
 --[=[
+  Replaces bits of `n` at position `f` and width `w` with `r`, and returns the resulting number.
+  `w` defaults to `1`, so a three-argument version of replace changes one bit at position `f` to `r`
+  (which should be `0` or `1`) and returns the result. Bits are indexed starting at `0`.
+  Errors if `f` and `f+w-1` are not between `0` and `63`.
+]=]
+function M.replace(n: number, f: number, r: number, w: number?): number
+  w = w or 1
+  if f < 0 or f + w > bitwidth then
+    error('Field out of bounds: ' .. f .. ' to ' .. bitwidth - 1)
+  end
+
+  -- Clear the bits in the range [f, f+w-1]
+  local mask = (2 ^ w - 1) * (2 ^ f)
+  n = n - (n % (2 ^ f)) + (n % (2 ^ (f + w)))
+
+  -- Set the bits in the range [f, f+w-1] to `r`
+  return n + (r * mask)
+end
+
+--[=[
   Rotates `n` to the left by `i` bits (if `i` is negative, a right rotate is performed instead);
   the bits that are shifted past the bit width are shifted back from the right.
   @param n number
