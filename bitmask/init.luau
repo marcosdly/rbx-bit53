@@ -234,7 +234,12 @@ end
   @return boolean
 ]=]
 function M.btest(...: buffer): boolean
-  error('not implemented')
+  local ok, result = pcall(M.band, ...)
+  if not ok then error('error while performing bitwise and: ' .. result) end
+  for i = 0, buffer.len(result) - 1 do
+    if buffer.readu8(result, i) ~= 0 then return true end
+  end
+  return false
 end
 
 --[=[
