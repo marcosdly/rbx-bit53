@@ -205,7 +205,26 @@ end
   @return buffer
 ]=]
 function M.bnot(buf: buffer): buffer
-  error('not implemented')
+  if buffer.len(buf) == 0 then error('bnot requires a non-empty buffer') end
+
+  local byteindex = 0
+  local len = buffer.len(buf)
+  local result = buffer.create(len)
+
+  while byteindex < len do
+    if byteindex + 3 < len then
+      -- Fully inbounds
+      local uint32 = buffer.readu32(buf, byteindex)
+      buffer.writeu32(result, byteindex, bit32.bnot(uint32))
+      byteindex = byteindex + 4 -- Jump by uint32
+    else
+      -- Partially out of bounds
+      local uint8 = buffer.readu8(buf, byteindex)
+      buffer.writeu8(result, byteindex, bit32.band(bit32.bnot(uint8), 0xFF))
+      byteindex = byteindex + 1 -- Jump by uint8
+    end
+  end
+  return result
 end
 
 --[=[
