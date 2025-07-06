@@ -1,15 +1,34 @@
 --!strict
 
--- 1GB in bytes
-local maxbytes = 1024 ^ 3
+--- Default to 1KB in bytes
+local maxbytes = 1024
+
+--- Default to 1KB in bits
+local maxbits = 8 * 1024
 
 --- 1GB in bits
-local maxbits = 8 * 1024 ^ 3
+local BUFFER_LIMIT = 8 * 1024 ^ 3
 
 local M = {}
 
 M.maxbits = maxbits
 M.maxbytes = maxbytes
+
+--[=[
+  Sets the maximum number of bits that can be used in bitmask operations globally. The default is 1KB.
+  The maximum number of bits is `8 * 1024^3` (1GB), and the minimum is `1` (1B). Errors if `bits` is
+  outside the range `[1..8*1024^3]`. The amount is then rounded up to the nearest byte, due to buffers
+  being byte-aligned, and thus, the maximum number of bits is `bits` rounded up to the nearest multiple
+  of `8`.
+  @param bits number
+]=]
+function M.setmaxbits(bits: number)
+  if bits < 1 or bits > BUFFER_LIMIT then
+    error('maxbits must be in the range [1..' .. maxbits .. ']')
+  end
+  maxbytes = math.ceil(bits / 8)
+  maxbits = maxbytes * 8
+end
 
 --[=[
   Performs a bitwise `and` of all input buffers and returns the result. If called with a
