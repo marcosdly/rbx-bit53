@@ -1,18 +1,43 @@
 --!strict
 
 --- Default to 1KB in bytes
-local maxbytes = 1024
+local maxbytes: number = 1024
 
 --- Default to 1KB in bits
-local maxbits = 8 * 1024
+local maxbits: number = 8192
 
 --- 1GB in bits
-local BUFFER_LIMIT = 8 * 1024 ^ 3
+local BUFFER_LIMIT = 8589934592
 
 local M = {}
 
-M.maxbits = maxbits
+-- type checking
+--[=[
+  @readonly
+]=]
 M.maxbytes = maxbytes
+--[=[
+  @readonly
+]=]
+M.maxbits = maxbits
+--[=[
+  @readonly
+]=]
+M.BUFFER_LIMIT = BUFFER_LIMIT
+
+setmetatable(M, {
+  __index = function(_, key)
+    if key == 'maxbytes' then
+      return maxbytes
+    elseif key == 'maxbits' then
+      return maxbits
+    elseif key == 'BUFFER_LIMIT' then
+      return BUFFER_LIMIT
+    else
+      return rawget(M, key)
+    end
+  end,
+})
 
 --[=[
   Sets the maximum number of bits that can be used in bitmask operations globally. The default is 1KB.
