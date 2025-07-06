@@ -132,7 +132,60 @@ end
   @return buffer
 ]=]
 function M.bor(...: buffer): buffer
-  error('not implemented')
+  if #... == 0 then error('bor requires at least one argument') end
+  if #... == 1 then return table.unpack(...) end
+
+  -- Maximum buffer size to determines result size
+  local maxsize = 0
+  for _, buf in ... do
+    maxsize = math.max(maxsize, buffer.len(buf))
+  end
+
+  if maxsize == 0 then error('bor requires at least one non-empty buffer') end
+  if maxsize > maxbytes then
+    error('bor result size cannot exceed global soft-limit of ' .. maxbytes .. ' bytes')
+  end
+
+  local result = buffer.create(maxsize)
+
+  -- Perform bitwise OR operation using uint32 chunks
+  local byteindex = 0
+  while byteindex < maxsize do
+    local uint32 = 0 -- Start with all bits cleared
+    for _, buf in ... do
+      local len = buffer.len(buf)
+      if byteindex + 3 < len then
+        uint32 = bit32.bor(uint32, buffer.readu32(buf, byteindex))
+        continue
+      end
+
+      -- Index is out of bounds, meaning 32-bit word is partially out of bounds
+      if byteindex < len then
+        local partial = 0
+        for j = 0, math.min(3, len - byteindex - 1) do
+          partial = bit32.bor(partial, bit32.lshift(buffer.readu8(buf, byteindex + j), j * 8))
+        end
+        uint32 = bit32.bor(uint32, partial)
+        continue
+      end
+      -- If buffer is shorter, do nothing (OR with 0)
+    end
+
+    -- Write result back to buffer
+    if byteindex + 3 < maxsize then
+      buffer.writeu32(result, byteindex, uint32)
+    else
+      -- Handle partial uint32 at end of result buffer
+      for j = 0, maxsize - byteindex - 1 do
+        buffer.writeu8(result, byteindex + j, bit32.band(bit32.rshift(uint32, j * 8), 0xFF))
+      end
+    end
+
+    -- Jump by sizeof uint32
+    byteindex += 4
+  end
+
+  return result
 end
 
 --[=[
