@@ -457,7 +457,20 @@ end
   @return buffer
 ]=]
 function M.lrotate(buf: buffer, i: number): buffer
-  error('not implemented')
+  local len = buffer.len(buf)
+  if len == 0 then error('lrotate requires a non-empty buffer') end
+
+  local total_bits = len * 8
+
+  -- Normalize i to [0, total_bits-1]
+  i = i % total_bits
+  if i == 0 then return buf end
+  if i < 0 then return M.rrotate(buf, math.abs(i)) end
+
+  -- lrotate: (buf << i) | (buf >> (total_bits - i))
+  local left = M.lshift(buf, i)
+  local right = M.rshift(buf, total_bits - i)
+  return M.bor(left, right)
 end
 
 --[=[
@@ -468,7 +481,20 @@ end
   @return buffer
 ]=]
 function M.rrotate(buf: buffer, i: number): buffer
-  error('not implemented')
+  local len = buffer.len(buf)
+  if len == 0 then error('rrotate requires a non-empty buffer') end
+
+  local total_bits = len * 8
+
+  -- Normalize i to [0, total_bits-1]
+  i = i % total_bits
+  if i == 0 then return buf end
+  if i < 0 then return M.lrotate(buf, math.abs(i)) end
+
+  -- rrotate: (buf >> i) | (buf << (total_bits - i))
+  local right = M.rshift(buf, i)
+  local left = M.lshift(buf, total_bits - i)
+  return M.bor(left, right)
 end
 
 --[=[
