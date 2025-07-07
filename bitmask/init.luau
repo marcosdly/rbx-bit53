@@ -508,66 +508,63 @@ end
   @return buffer
 ]=]
 function M.extract(buf: buffer, f: number, w: number?): buffer
-  error('not implemented')
-end
-
---[=[
-  Replaces bits of `buf` at position `f` and width `w` with `r`, and returns the resulting buffer.
-  `w` defaults to 1, so a three-argument version of replace changes one bit at position `f` to `r`
-  (which should be `0` or `1`) and returns the result. Bits are indexed starting at `0`.
-  Errors if `f` and `f+w-1` are not in the range `[0..maxbits]`. Errors if `buf` has size zero.
-  @param buf buffer
-  @param f number
-  @param f number
-  @param w number?
-  @return buffer
-]=]
-function M.replace(buf: buffer, r: number, f: number, w: number?): buffer
-  error('not implemented')
-end
-
---[=[
-  Returns the number of consecutive zero bits in `buf` starting from the left-most (most significant)
-  bit. Errors if `buf` has size zero.
-  @param buf buffer
-  @return number
-]=]
-function M.countlz(buf: buffer): number
   local len = buffer.len(buf)
-  if len == 0 then error('countlz requires a non-empty buffer') end
-  local count = 0
-  for i = 0, len - 1 do
-    local byte = buffer.readu8(buf, i)
-    if byte == 0 then
-      count += 8
-    else
-      count += bit32.countlz(byte)
-      return count
+  if len == 0 then error('extract requires a non-empty buffer') end
+  w = w or 1
+  if w < 0 then error('extract requires w to be non-negative, got ' .. w) end
+  if f < 0 or f + w - 1 >= maxbits then
+    error('extract requires f and f+w-1 in the range [0..' .. maxbits .. ']')
+  end
+
+  -- Calculate start/end byte and bit offsets
+  local start_bit = f
+  local end_bit = f + w - 1
+  local start_byte = start_bit // 8
+  local end_byte = end_bit // 8
+  local bit_offset = start_bit % 8
+
+  local out_len = math.ceil(w / 8)
+  local result = buffer.create(out_len)
+
+  -- Fast path: extracting only whole bytes, no bit offset, and w is multiple of 8
+  if bit_offset == 0 and w % 8 == 0 then
+    for i = 0, out_len - 1 do
+      buffer.writeu8(result, i, buffer.readu8(buf, start_byte + i))
+    end
+    return result
+  end
+
+  -- General case: extract bits one by one and pack into output buffer
+  local out_bit_written = 0
+  local out_byte = 0
+  local out_bit = 0
+
+  -- TODO: triple check this logic because I'm not sure at all if this works correctly
+  --[[
+    TODO: extract bit chunks instead of individual bits for performance
+    Logically, chunks should be `x` and `y` where `x+y=8` and the amount of bits to
+    operate on alternates between `x` and `y`.
+  ]]
+  for i = 0, w - 1 do
+    local bit_index = start_bit + i
+    local byte_index = bit_index // 8
+    local bit_in_byte = bit_index % 8
+
+    local byte_val = buffer.readu8(buf, byte_index)
+    local bit_val = bit32.band(bit32.rshift(byte_val, 7 - bit_in_byte), 1)
+
+    -- Place bit in output buffer
+    out_byte = bit32.bor(out_byte, bit32.lshift(bit_val, 7 - (out_bit % 8)))
+    out_bit = out_bit + 1
+
+    if out_bit % 8 == 0 or i == w - 1 then
+      buffer.writeu8(result, out_bit_written, out_byte)
+      out_bit_written = out_bit_written + 1
+      out_byte = 0
     end
   end
-  return count
-end
 
---[=[
-  Returns the number of consecutive zero bits in `buf` starting from the right-most (least significant)
-  bit. Errors if `buf` has size zero.
-  @param buf buffer
-  @return number
-]=]
-function M.countrz(buf: buffer): number
-  local len = buffer.len(buf)
-  if len == 0 then error('countrz requires a non-empty buffer') end
-  local count = 0
-  for i = len - 1, 0, -1 do
-    local byte = buffer.readu8(buf, i)
-    if byte == 0 then
-      count += 8
-    else
-      count += bit32.countrz(byte)
-      return count
-    end
-  end
-  return count
+  return result
 end
 
 --[=[
