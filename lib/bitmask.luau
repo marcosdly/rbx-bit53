@@ -568,6 +568,64 @@ function M.extract(buf: buffer, f: number, w: number?): buffer
 end
 
 --[=[
+  Replaces bits of `buf` at position `f` and width `w` with `r`, and returns the resulting buffer.
+  `w` defaults to 1, so a three-argument version of replace changes one bit at position `f` to `r`
+  (which should be `0` or `1`) and returns the result. Bits are indexed starting at `0`.
+  Errors if `f` and `f+w-1` are not in the range `[0..maxbits]`. Errors if `buf` has size zero.
+  @param buf buffer
+  @param f number
+  @param f number
+  @param w number?
+  @return buffer
+]=]
+function M.replace(buf: buffer, r: number, f: number, w: number?): buffer
+  error('not implemented')
+end
+
+--[=[
+  Returns the number of consecutive zero bits in `buf` starting from the left-most (most significant)
+  bit. Errors if `buf` has size zero.
+  @param buf buffer
+  @return number
+]=]
+function M.countlz(buf: buffer): number
+  local len = buffer.len(buf)
+  if len == 0 then error('countlz requires a non-empty buffer') end
+  local count = 0
+  for i = 0, len - 1 do
+    local byte = buffer.readu8(buf, i)
+    if byte == 0 then
+      count += 8
+    else
+      count += bit32.countlz(byte)
+      return count
+    end
+  end
+  return count
+end
+
+--[=[
+  Returns the number of consecutive zero bits in `buf` starting from the right-most (least significant)
+  bit. Errors if `buf` has size zero.
+  @param buf buffer
+  @return number
+]=]
+function M.countrz(buf: buffer): number
+  local len = buffer.len(buf)
+  if len == 0 then error('countrz requires a non-empty buffer') end
+  local count = 0
+  for i = len - 1, 0, -1 do
+    local byte = buffer.readu8(buf, i)
+    if byte == 0 then
+      count += 8
+    else
+      count += bit32.countrz(byte)
+      return count
+    end
+  end
+end
+
+--[=[
   Returns `buf` with the order of bytes swaped. Errors if `buf` has size zero.
   @param buf buffer
   @return buffer
