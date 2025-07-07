@@ -573,7 +573,13 @@ end
   @return buffer
 ]=]
 function M.byteswap(buf: buffer): buffer
-  error('not implemented')
+  local len = buffer.len(buf)
+  if len == 0 then error('byteswap requires a non-empty buffer') end
+  local result = buffer.create(len)
+  for i = 0, len - 1 do
+    buffer.writeu8(result, i, buffer.readu8(buf, len - 1 - i))
+  end
+  return result
 end
 
 return M
