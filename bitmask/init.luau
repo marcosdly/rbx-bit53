@@ -336,7 +336,19 @@ end
   @return number
 ]=]
 function M.countlz(buf: buffer): number
-  error('not implemented')
+  local len = buffer.len(buf)
+  if len == 0 then error('countlz requires a non-empty buffer') end
+  local count = 0
+  for i = 0, len - 1 do
+    local byte = buffer.readu8(buf, i)
+    if byte == 0 then
+      count += 8
+    else
+      count += bit32.countlz(byte)
+      return count
+    end
+  end
+  return count
 end
 
 --[=[
@@ -346,7 +358,19 @@ end
   @return number
 ]=]
 function M.countrz(buf: buffer): number
-  error('not implemented')
+  local len = buffer.len(buf)
+  if len == 0 then error('countrz requires a non-empty buffer') end
+  local count = 0
+  for i = len - 1, 0, -1 do
+    local byte = buffer.readu8(buf, i)
+    if byte == 0 then
+      count += 8
+    else
+      count += bit32.countrz(byte)
+      return count
+    end
+  end
+  return count
 end
 
 --[=[
