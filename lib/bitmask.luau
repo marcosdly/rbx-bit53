@@ -579,7 +579,59 @@ end
   @return buffer
 ]=]
 function M.replace(buf: buffer, r: number, f: number, w: number?): buffer
-  error('not implemented')
+  local len = buffer.len(buf)
+  if len == 0 then error('replace requires a non-empty buffer') end
+  w = w or 1
+  if w < 0 then error('replace requires w to be non-negative, got ') end
+  if r ~= 0 and r ~= 1 then error('replace requires r to be either 0 or 1, got ' .. r) end
+  if f < 0 or f + w - 1 >= maxbits then
+    error('replace requires f and f+w-1 in the range [0..' .. maxbits .. ']')
+  end
+
+  -- Calculate start/end byte and bit offsets
+  local start_bit = f
+  local end_bit = f + w - 1
+  local start_byte = start_bit // 8
+  local end_byte = end_bit // 8
+  local bit_offset = start_bit % 8
+
+  local result = buffer.create(len)
+  for i = 0, len - 1 do
+    buffer.writeu8(result, i, buffer.readu8(buf, i))
+  end
+
+  -- TODO proper documentation or else this will be a nightmare to maintain
+
+  -- Modify the first byte if it is partially affected
+  if bit_offset > 0 then
+    local mask = bit32.bnot(bit32.lshift(0xFF, 8 - bit_offset))
+    if start_byte == end_byte then
+      mask = bit32.bor(mask, bit32.lshift(0xFF, 8 - (end_bit % 8 + 1)))
+    end
+    local original_byte = buffer.readu8(buf, start_byte)
+    local replacement_bits = bit32.band(bit32.lshift(r, 8 - (bit_offset + w)), mask)
+    buffer.writeu8(
+      result,
+      start_byte,
+      bit32.bor(bit32.band(original_byte, bit32.bnot(mask)), replacement_bits)
+    )
+  end
+
+  -- Modify whole bytes in the range
+  for i = start_byte + 1, end_byte - 1 do
+    buffer.writeu8(result, i, bit32.band(bit32.rshift(r, (end_byte - i) * 8), 0xFF))
+  end
+
+  -- Modify the last byte if it is partially affected
+  if end_bit % 8 ~= 7 then
+    local mask = bit32.lshift(0xFF, 8 - (end_bit % 8 + 1))
+    local original_byte = buffer.readu8(buf, end_byte)
+    local replacement_bits =
+      bit32.band(bit32.rshift(r, (end_byte - start_byte) * 8), bit32.bnot(mask))
+    buffer.writeu8(result, end_byte, bit32.bor(bit32.band(original_byte, mask), replacement_bits))
+  end
+
+  return result
 end
 
 --[=[
