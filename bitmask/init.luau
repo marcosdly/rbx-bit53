@@ -252,7 +252,50 @@ end
   @return buffer
 ]=]
 function M.arshift(buf: buffer, i: number): buffer
-  error('not implemented')
+  local len = buffer.len(buf)
+  if len == 0 then error('arshift requires a non-empty buffer') end
+  if i < -maxbits or i > maxbits then
+    error('arshift requires i in the range [-' .. maxbits .. '..' .. maxbits .. ']')
+  end
+
+  if i == 0 then return buf end
+  if i < 0 then return M.lshift(buf, math.abs(i)) end
+
+  -- Right shift with sign extension
+  local result = M.rshift(buf, i)
+  -- Propagate sign bit
+  local sign = bit32.band(buffer.readu8(buf, 0), 0x80) ~= 0 and 0xFF or 0x00
+
+  local byte_shift = i // 8
+  local bit_shift = i % 8
+
+  for byte_index = 0, byte_shift - 1 do
+    buffer.writeu8(result, byte_index, sign)
+  end
+
+  if bit_shift > 0 and byte_shift < len then
+    -- Propagate sign bit to the last byte
+
+    local mask = bit32.lshift(0xFF, 8 - bit_shift)
+    local original_byte = buffer.readu8(result, byte_shift)
+
+    -- NOTE: (original_byte & ~mask) \ (sign & mask)
+    local new_byte =
+      -- OR
+      bit32.bor(
+        -- AND
+        bit32.band(
+          original_byte,
+          -- NOT
+          bit32.bnot(mask)
+        ),
+        -- AND
+        bit32.band(sign, mask)
+      )
+
+    buffer.writeu8(result, byte_shift, new_byte)
+  end
+  return result
 end
 
 --[=[
@@ -263,7 +306,42 @@ end
   @return buffer
 ]=]
 function M.lshift(buf: buffer, i: number): buffer
-  error('not implemented')
+  local len = buffer.len(buf)
+  if len == 0 then error('lshift requires a non-empty buffer') end
+  if i < -maxbits or i > maxbits then
+    error('lshift requires i in the range [-' .. maxbits .. '..' .. maxbits .. ']')
+  end
+
+  if i == 0 then return buf end
+  if i < 0 then return M.rshift(buf, math.abs(i)) end
+
+  local result = buffer.create(len)
+  local byte_shift = i // 8
+  local bit_shift = i % 8
+
+  for byte_index = 0, len - 1 do
+    local new_byte = 0
+
+    if byte_index + byte_shift < len then
+      -- Current byte is in bounds
+
+      new_byte = buffer.readu8(buf, byte_index + byte_shift)
+      local new_byte_shifted = bit32.lshift(new_byte, bit_shift)
+
+      if bit_shift > 0 and byte_index + byte_shift + 1 < len then
+        -- Next byte is in bounds
+
+        local next_byte = buffer.readu8(buf, byte_index + byte_shift + 1)
+        new_byte = bit32.bor(new_byte_shifted, bit32.rshift(next_byte, 8 - bit_shift))
+      else
+        new_byte = new_byte_shifted
+      end
+
+      new_byte = bit32.band(new_byte, 0xFF)
+    end
+    buffer.writeu8(result, byte_index, new_byte)
+  end
+  return result
 end
 
 --[=[
@@ -274,7 +352,47 @@ end
   @return buffer
 ]=]
 function M.rshift(buf: buffer, i: number): buffer
-  error('not implemented')
+  local len = buffer.len(buf)
+  if len == 0 then error('rshift requires a non-empty buffer') end
+  if i < -maxbits or i > maxbits then
+    error('rshift requires i in the range [-' .. maxbits .. '..' .. maxbits .. ']')
+  end
+
+  if i == 0 then return buf end
+  if i < 0 then return M.lshift(buf, math.abs(i)) end
+
+  local result = buffer.create(len)
+  local byte_shift = math.floor(i / 8)
+  local bit_shift = i % 8
+
+  for byte_index = 0, len - 1 do
+    local new_byte = 0
+    if byte_index - byte_shift >= 0 then
+      -- Current byte is significant to the operation (i.e. not zero)
+
+      new_byte = buffer.readu8(buf, byte_index - byte_shift)
+
+      if bit_shift > 0 then
+        local previous_byte = buffer.readu8(buf, byte_index - byte_shift - 1)
+        local new_byte_shifted = bit32.rshift(new_byte, bit_shift)
+
+        local previous_byte_shifted: number
+        if byte_index - byte_shift - 1 >= 0 then
+          -- Previous byte is significant to the operation (i.e. not zero)
+
+          previous_byte_shifted = bit32.lshift(previous_byte, 8 - bit_shift)
+        else
+          previous_byte_shifted = 0
+        end
+
+        new_byte = bit32.bor(new_byte_shifted, previous_byte_shifted)
+      end
+
+      new_byte = bit32.band(new_byte, 0xFF)
+    end
+    buffer.writeu8(result, byte_index, new_byte)
+  end
+  return result
 end
 
 --[=[
