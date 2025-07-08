@@ -105,7 +105,7 @@ end
   @return boolean
 ]=]
 function M.btest(...: number): boolean
-  return if #... == 0 then true else M.band(...) ~= ZEROBYTE
+  return M.band(...) ~= ZEROBYTE
 end
 
 --[=[
@@ -123,17 +123,26 @@ function M.extract(n: number, f: number, w: number?): number
 
   local low, high = split(n)
 
-  if f < UINT32_WIDTH and f + w - 1 > UINT32_WIDTH then
-    -- Field crosses the boundary between low and high parts
-    local lowPart = bit32.extract(low, f, UINT32_WIDTH - f)
-    local highPart = bit32.extract(high, 0, f + w - UINT32_WIDTH)
-    local mask = bit32.lshift(highPart, UINT32_WIDTH - f)
-    return bit32.bor(lowPart, mask)
+  if f >= UINT32_WIDTH then
+    -- Field is entirely in the high part
+    return bit32.extract(high, f - UINT32_WIDTH, w)
   end
 
-  return if f < UINT32_WIDTH
-    then bit32.extract(low, f, w)
-    else bit32.extract(high, f - UINT32_WIDTH, w)
+  if f < UINT32_WIDTH then
+    -- Field is entirely in the low part
+    return bit32.extract(low, f, w)
+  end
+
+  -- Field crosses the boundary between low and high parts
+  local extracted_high = bit32.extract(high, 0, f + w - UINT32_WIDTH)
+  if f + w >= UINT32_WIDTH then
+    -- Result is greater than 32 bits, so just change high part
+    return combine(low, extracted_high)
+  end
+
+  local extracted_low = bit32.extract(low, f, UINT32_WIDTH - f)
+  extracted_high = bit32.lshift(extracted_high, UINT32_WIDTH - f)
+  return bit32.bor(extracted_low, extracted_high) -- combine
 end
 
 --[=[
