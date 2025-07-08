@@ -195,11 +195,14 @@ function M.lshift(n: number, i: number): number
   local low, high = split(n)
 
   if i >= UINT32_WIDTH then
-    high = low
+    -- Shift low part into high part
+    high = bit32.lshift(low, i - UINT32_WIDTH)
     low = ZEROBYTE
   else
-    low = bit32.lshift(low, i) + bit32.rshift(high, UINT32_WIDTH - i)
+    local shifted_over = bit32.extract(low, UINT32_WIDTH - i, i)
     high = bit32.lshift(high, i)
+    high = bit32.bor(high, shifted_over) -- merge bits
+    low = bit32.lshift(low, i)
   end
 
   return combine(low, high)
@@ -219,10 +222,13 @@ function M.rshift(n: number, i: number): number
   local low, high = split(n)
 
   if i >= UINT32_WIDTH then
-    low = high
+    -- Shift high part into low part
+    low = bit32.rshift(high, i - UINT32_WIDTH)
     high = ZEROBYTE
   else
-    low = bit32.rshift(low, i) + bit32.lshift(high, UINT32_WIDTH - i)
+    local shifted_closer = bit32.extract(high, 0, i)
+    low = bit32.rshift(low, i)
+    low = bit32.bor(low, shifted_closer) -- merge bits
     high = bit32.rshift(high, i)
   end
 
@@ -231,7 +237,7 @@ end
 
 --[=[
   Shifts `n` by `i` bits to the right (if `i` is negative, a left shift is performed instead). The
-  most significant bit of `n` is propagated during the shift. When `i` is larger than 52, returns a
+  most significant bit of `n` is propagated during the shift. When `i` is larger then 52, returns a
   number with all bits set to the sign bit of `n`. When `i` is smaller than `-52`, 0 is returned.
   @param n number
   @param i number
@@ -239,23 +245,18 @@ end
 ]=]
 function M.arshift(n: number, i: number): number
   if i <= -FULL_WIDTH then return ZEROBYTE end
+
+  local low, high = split(n)
+  local signbit = bit32.extract(high, 20)
+
   if i >= FULL_WIDTH then
-    -- All bits set to sign bit
-    local sign = bit32.extract(split(n))
-    return if sign == 1 then MAX53 else ZEROBYTE
+    -- Fill with sign bit
+    return if signbit == 1 then MAX53 else ZEROBYTE
   end
 
-  local result = M.rshift(n, i)
-  local _, high = split(n)
-
-  -- propagate the sign bit of n
-  local sign = bit32.extract(high, 31)
-  if sign == 1 and i > 0 then
-    -- Fill shifted-in bits with 1s
-    local fillmask = M.lshift(MAX53, FULL_WIDTH - i)
-    result = M.bor(result, fillmask)
-  end
-  return result
+  low, high = split(M.rshift(n, i))
+  high = bit32.replace(high, signbit, 20)
+  return combine(low, high)
 end
 
 --[=[
