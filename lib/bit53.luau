@@ -158,27 +158,26 @@ end
 ]=]
 function M.replace(n: number, f: number, r: number, w: number?): number
   w = w or 1
-  if f < 0 or f + w >= FULL_WIDTH then error('Field out of bounds: ' .. f .. ' to 52') end
+  if f < 0 then error('Field start cannot be negative: f == ' .. f) end
+  if f + w >= FULL_WIDTH then error(`Field out of bounds: [f..f+w-1] == [{f}..{f + w - 1}]`) end
 
   local low, high = split(n)
 
-  if f < UINT32_WIDTH and f + w - 1 > UINT32_WIDTH then
-    -- Field crosses the boundary between low and high parts
-    local lowPart = bit32.replace(low, f, r, UINT32_WIDTH - f)
-
-    local field = bit32.lshift(r, UINT32_WIDTH - f)
-    local width = f + w - UINT32_WIDTH
-    local highPart = bit32.replace(high, 0, field, width)
-
-    return combine(lowPart, highPart)
+  if f >= UINT32_WIDTH then
+    -- Field is entirely in the high part
+    high = bit32.replace(high, r, f - UINT32_WIDTH, w)
+    return combine(low, high)
   end
 
-  if f < UINT32_WIDTH then
-    low = bit32.replace(low, f, r, w)
-  else
-    high = bit32.replace(high, f - UINT32_WIDTH, r, w)
+  if f + w - 1 < UINT32_WIDTH then
+    -- Field is entirely in the low part
+    low = bit32.replace(low, r, f, w)
+    return combine(low, high)
   end
 
+  -- Field crosses the boundary between low and high parts
+  low = bit32.replace(low, r, f, UINT32_WIDTH - f)
+  high = bit32.replace(high, r, 0, f + w - UINT32_WIDTH)
   return combine(low, high)
 end
 
