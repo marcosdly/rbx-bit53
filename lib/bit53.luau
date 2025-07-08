@@ -324,11 +324,11 @@ end
   @return number
 ]=]
 function M.countlz(n: number): number
-  if n == ZEROBYTE then return FULL_WIDTH end
+  if n == ZEROBYTE then return 53 end
 
   local low, high = split(n)
 
-  return if high == ZEROBYTE then UINT32_WIDTH + bit32.countlz(low) else bit32.countlz(high)
+  return if high == ZEROBYTE then 21 + bit32.countlz(low) else bit32.countlz(high)
 end
 
 --[=[
@@ -338,11 +338,11 @@ end
   @return number
 ]=]
 function M.countrz(n: number): number
-  if n == ZEROBYTE then return FULL_WIDTH end
+  if n == ZEROBYTE then return 53 end
 
   local low, high = split(n)
 
-  return if low == ZEROBYTE then UINT32_WIDTH + bit32.countrz(high) else bit32.countrz(low)
+  return if low == ZEROBYTE then 21 + bit32.countrz(high) else bit32.countrz(low)
 end
 
 --[=[
