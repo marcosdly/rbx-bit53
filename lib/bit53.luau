@@ -10,6 +10,7 @@ local FULL_WIDTH = 53
 local UINT32_WIDTH = 32
 local ZEROBYTE = 0 -- for explicitness
 local MAX53 = 9_007_199_254_740_991
+local MAX21 = 2_097_151
 
 local M = {}
 
@@ -27,6 +28,23 @@ end
 local function combine(low: number, high: number): number
   high = bit32.replace(high, 0, 21, 11) -- Ensure high part is 21 bits
   return high * 2 ^ UINT32_WIDTH + low
+end
+
+local function clamp53(n: number): number
+  if n < 0 then return ZEROBYTE end
+  if n > MAX53 then return MAX53 end
+
+  -- inline split() and combine() for performance and convenience
+  local low = n % 2 ^ UINT32_WIDTH
+  local high = (n - low) / 2 ^ UINT32_WIDTH
+  high = bit32.replace(high, 0, 21, 11)
+  return high * 2 ^ UINT32_WIDTH + low
+end
+
+local function clamp21(n: number): number
+  if n < 0 then return ZEROBYTE end
+  if n > MAX21 then return MAX21 end
+  return bit32.replace(n, 0, 21, 11)
 end
 
 --[=[
@@ -269,21 +287,58 @@ end
 function M.lrotate(n: number, i: number): number
   if i < 0 then return M.rrotate(n, math.abs(i)) end
 
-  local delta = i % FULL_WIDTH
-  if delta == 0 then return n end
+  if i % FULL_WIDTH == 0 then return clamp53(n) end
+
+  -- NOTE: consider n an array of numbers with length 53
 
   local low, high = split(n)
-  local rLow: number, rHigh: number
+  local rLow: number, rHigh: number, temp: number
 
-  if delta >= UINT32_WIDTH then
-    -- Rotate high part into low part
-    rLow = bit32.lshift(high, delta - UINT32_WIDTH) + bit32.rshift(low, FULL_WIDTH - delta)
-    rHigh = bit32.lshift(low, delta - UINT32_WIDTH)
-  else
-    -- Rotate within the same part
-    rLow = bit32.lshift(low, delta) + bit32.rshift(high, UINT32_WIDTH - delta)
-    rHigh = bit32.lshift(high, delta) + bit32.rshift(low, UINT32_WIDTH - delta)
+  if i <= 21 then
+    -- New index of the signbit is inside the high part
+
+    rHigh = bit32.extract(low, 0, i)
+    rHigh = bit32.rshift(rHigh, 21 - i)
+    temp = bit32.lshift(high, i)
+    rHigh = bit32.bor(rHigh, temp)
+
+    rLow = bit32.extract(high, 0, i)
+    rLow = bit32.rshift(rLow, UINT32_WIDTH - i)
+    temp = bit32.lshift(low, i)
+    rLow = bit32.bor(rLow, temp)
+
+    return combine(rLow, rHigh)
   end
+
+  local REM = i % 21
+
+  if i // 21 == 2 then
+    rLow = bit32.lshift(high, REM)
+
+    rHigh = bit32.extract(high, 0, REM)
+    rHigh = bit32.rshift(rHigh, 21 - REM)
+
+    temp = bit32.lshift(low, 11 + REM)
+    rHigh = bit32.bor(rHigh, temp)
+
+    temp = bit32.lshift(low, REM)
+    temp = bit32.rshift(temp, REM)
+    rLow = bit32.bor(rLow, temp)
+
+    return combine(rLow, rHigh)
+  end
+
+  local DELTA = UINT32_WIDTH - REM
+
+  rLow = bit32.rshift(high, 11)
+  rLow = bit32.lshift(rLow, REM)
+  temp = bit32.rshift(low, DELTA)
+  rLow = bit32.bor(rLow, temp)
+
+  rHigh = bit32.lshift(low, DELTA)
+  rHigh = bit32.rshift(rHigh, 21 - REM)
+  temp = bit32.lshift(high, REM)
+  rHigh = bit32.bor(rHigh, temp)
 
   return combine(rLow, rHigh)
 end
