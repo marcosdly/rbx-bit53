@@ -157,6 +157,35 @@ function M.extract(n: number, f: number, w: number?): number
 end
 
 --[=[
+  Replaces bits of `n` at position `f` and width `w` with `r`, and returns the resulting number.
+  `w` defaults to `1`, so a three-argument version of `replace` changes one bit at position `f`
+  to `r` (which should be 0 or 1) and returns the result. Bits are indexed starting at 0. Errors
+  if `f` and `f+w-1` are not between 0 and 52.
+  @param n number
+  @param f number
+  @param r number
+  @param w number?
+  @return number
+]=]
+function M.replace(n: number, f: number, r: number, w: number?): number
+  if not (r == 1 or r == 0) then error('not a bit value (1 or 0): r=' .. r) end
+  if f < 0 or f > 52 then error('field out of bounds: f=' .. f) end
+  w = w or 1
+  local low, high = split64(n)
+  if w == 1 then
+    if f < 32 then return _replace(low, f, r) end
+    return _replace(high, f - 31, r)
+  end
+  local _r = f + w - 1
+  if _r > 52 then error('field out of bounds: f+w-1=%d' .. _r) end
+  if _r < 32 then return _replace(low, f, r, w) end
+  high = _replace(high, 0, r, _r - 31)
+  if f >= 32 and _r < 52 then return high end
+  low = _replace(low, f, r, 31 - f)
+  return join64(low, high)
+end
+
+--[=[
   Shifts `n` to the left by `i` bits (if `i` is negative, a right shift is performed instead).
   When `i` is outside of `[-52..52]` range, returns 0.
   @param n number
