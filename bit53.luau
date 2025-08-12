@@ -2,6 +2,8 @@
 
 local _and = bit32.band
 local _not = bit32.bnot
+local _or = bit32.bor
+local _xor = bit32.bxor
 local _right = bit32.rshift
 local _left = bit32.lshift
 local _swap = bit32.byteswap
@@ -47,6 +49,14 @@ local function clampbits21(n: number): number
   return _replace(n, 0, 20, 11)
 end
 
+local function apply(func: (...number) -> number, argv: { number }): number
+  local low, high = {}, {}
+  for i, n in ipairs(argv) do
+    low[i], high[i] = split64(n)
+  end
+  return join64(func(_unpack(low)), func(_unpack(high)))
+end
+
 --[=[
   Performs a bitwise `and` of all input numbers and returns the result. If the function
   is called with no arguments, an integer with all bits set to 1 is returned.
@@ -58,11 +68,7 @@ local function band(...: number): number
   local argc: number = #argv
   if argc == 0 then return max53 end
   if argc == 1 then return argv[1] end
-  local low, high = {}, {}
-  for i, n in ipairs(argv) do
-    low[i], high[i] = split64(n)
-  end
-  return join64(_and(_unpack(low)), _and(_unpack(high)))
+  return apply(_and, argv)
 end
 
 M.band = band
@@ -77,6 +83,34 @@ function M.bnot(n: number): number
   if n >= max53 then return 0 end
   local low, high = split64(n)
   return join64(_not(low), _not(high))
+end
+
+--[=[
+  Performs a bitwise `or` of all input numbers and returns the result. If the function is
+  called with no arguments, zero is returned.
+  @param ... number
+  @return number
+]=]
+function M.bor(...: number): number
+  local argv: { number } = { ... }
+  local argc: number = #argv
+  if argc == 0 then return 0 end
+  if argc == 1 then return argv[1] end
+  return apply(_or, argv)
+end
+
+--[=[
+  Performs a bitwise `xor` of all input numbers and returns the result. If the function
+  is called with no arguments, zero is returned.
+  @param ... number
+  @return number
+]=]
+function M.bxor(...: number): number
+  local argv: { number } = { ... }
+  local argc: number = #argv
+  if argc == 0 then return 0 end
+  if argc == 1 then return argv[1] end
+  return apply(_xor, argv)
 end
 
 --[=[
