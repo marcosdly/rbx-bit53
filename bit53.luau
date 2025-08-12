@@ -1,6 +1,7 @@
 --!strict
 
 local _and = bit32.band
+local _not = bit32.bnot
 local _right = bit32.rshift
 local _left = bit32.lshift
 local _swap = bit32.byteswap
@@ -65,6 +66,18 @@ local function band(...: number): number
 end
 
 M.band = band
+
+--[=[
+  Performs a bitwise `not` on the input number and returns the result.
+  @param n number
+  @return number
+]=]
+function M.bnot(n: number): number
+  if n == 0 then return max53 end
+  if n >= max53 then return 0 end
+  local low, high = split64(n)
+  return join64(_not(low), _not(high))
+end
 
 --[=[
   Performs a bitwise `and` of all input numbers, and return `true` if the result is not zero.
