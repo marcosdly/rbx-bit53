@@ -227,6 +227,38 @@ end
 M.rshift = rshift
 
 --[=[
+  Rotates `n` to the left by `i` bits (if `i` is negative, a right rotate is performed instead);
+  the bits that are shifted past the bit width are shifted back from the right.
+  @param n number
+  @param i number
+  @return number
+]=]
+local function lrotate(n: number, i: number): number
+  if i < 0 then return rrotate(n, -i) end
+  i = i % 53
+  if i == 0 then return n end
+  return band(lshift(n, i), rshift(n, 53 - i))
+end
+
+M.lrotate = lrotate
+
+--[=[
+  Rotates `n` to the right by `i` bits (if `i` is negative, a left rotate is performed instead);
+  the bits that are shifted past the bit width are shifted back from the left.
+  @param n number
+  @param i number
+  @return number
+]=]
+local function rrotate(n: number, i: number): number
+  if i < 0 then return lrotate(n, -i) end
+  i = i % 53
+  if i == 0 then return n end
+  return band(rshift(n, i), lshift(n, 53 - i))
+end
+
+M.rrotate = rrotate
+
+--[=[
   Returns the number of consecutive zero bits in the 53-bit representation of `n` starting
   from the left-most (most significant) bit. Returns 53 if `n` is zero.
   @param n number
