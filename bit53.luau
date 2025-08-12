@@ -10,6 +10,7 @@ local _swap = bit32.byteswap
 local _rightzeros = bit32.countrz
 local _leftzeros = bit32.countlz
 local _replace = bit32.replace
+local _extract = bit32.extract
 
 local _max = math.max
 
@@ -122,6 +123,37 @@ end
 function M.btest(...: number): boolean
   -- FIX logically unnecessary expanding and unpacking of vararg
   return band(_unpack({ ... })) ~= 0
+end
+
+--[=[
+  Extracts bits of `n` at position `f` with a width of `w`, and returns the resulting number.
+  `w` defaults to `1`, so a two-argument version of `extract` returns the bit value at position `f`.
+  Bits are indexed starting at 0. Errors if `f` and `f+w-1` are not between 0 and 52.
+  @param n number
+  @param f number
+  @param w number?
+  @return number
+]=]
+function M.extract(n: number, f: number, w: number?): number
+  if f < 0 or f > 52 then error('field out of bounds: f=' .. f) end
+  w = w or 1
+  local low, high = split64(n)
+  if w == 1 then
+    if f < 32 then return _extract(low, f) end
+    return _extract(high, f - 32)
+  end
+  local r = f + w - 1
+  if r > 52 then error('field out of bounds: f+w-1=%d' .. r) end
+  if r < 32 then return _extract(low, f, w) end
+  if f >= 32 and r < 52 then return _extract(high, f, w) end
+  local wl, fh = 31 - f, r - 31
+  -- low  = ***---- => ----***
+  -- high = ----*** => ----*** => -***---
+  low, high = _extract(low, f, wl), _left(_extract(high, 0, fh), fh)
+  --[[   -***--- UNION
+         ----***
+  return -****** ]]
+  return join64(low, high)
 end
 
 --[=[
