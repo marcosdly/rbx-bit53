@@ -140,7 +140,7 @@ function M.extract(n: number, f: number, w: number?): number
   local low, high = split64(n)
   if w == 1 then
     if f < 32 then return _extract(low, f) end
-    return _extract(high, f - 32)
+    return _extract(high, f - 31)
   end
   local r = f + w - 1
   if r > 52 then error('field out of bounds: f+w-1=%d' .. r) end
