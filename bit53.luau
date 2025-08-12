@@ -10,6 +10,8 @@ local _replace = bit32.replace
 
 local _max = math.max
 
+local _unpack = table.unpack
+
 local w = 32
 local max32 = bit32.band()
 local max21 = _right(max32, 11)
@@ -43,6 +45,26 @@ end
 local function clampbits21(n: number): number
   return _replace(n, 0, 20, 11)
 end
+
+--[=[
+  Performs a bitwise `and` of all input numbers and returns the result. If the function
+  is called with no arguments, an integer with all bits set to 1 is returned.
+  @param ... number
+  @return number
+]=]
+local function band(...: number): number
+  local argv: { number } = { ... }
+  local argc: number = #argv
+  if argc == 0 then return max53 end
+  if argc == 1 then return argv[1] end
+  local low, high = {}, {}
+  for i, n in ipairs(argv) do
+    low[i], high[i] = split64(n)
+  end
+  return join64(_and(_unpack(low)), _and(_unpack(high)))
+end
+
+M.band = band
 
 --[=[
   Shifts `n` to the left by `i` bits (if `i` is negative, a right shift is performed instead).
