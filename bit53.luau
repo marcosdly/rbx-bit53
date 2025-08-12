@@ -76,10 +76,11 @@ local function rshift(n: number, i: number): number
   if i == 0 then return n end
   if not inrange(i) then return 0 end
   if i < 0 then return lshift(n, -i) end
-  if n <= max32 then return _left(n, i) end
+  if n <= max32 then return _right(n, i) end
   local low, high = split64(n)
-  if i >= 21 then return _left(low, i - 21) end
-  return join64(low, _left(high, i))
+  if i == 21 then return low end
+  if i > 21 then return _right(low, i - 21) end
+  return join64(low, _right(high, i))
 end
 
 M.rshift = rshift
