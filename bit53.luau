@@ -134,7 +134,7 @@ end
   @param w number?
   @return number
 ]=]
-function M.extract(n: number, f: number, w: number?): number
+local function extract(n: number, f: number, w: number?): number
   if f < 0 or f > 52 then error('field out of bounds: f=' .. f) end
   w = w or 1
   local low, high = split64(n)
@@ -156,6 +156,8 @@ function M.extract(n: number, f: number, w: number?): number
   return join64(low, high)
 end
 
+M.extract = extract
+
 --[=[
   Replaces bits of `n` at position `f` and width `w` with `r`, and returns the resulting number.
   `w` defaults to `1`, so a three-argument version of `replace` changes one bit at position `f`
@@ -167,7 +169,7 @@ end
   @param w number?
   @return number
 ]=]
-function M.replace(n: number, f: number, r: number, w: number?): number
+local function replace(n: number, f: number, r: number, w: number?): number
   if not (r == 1 or r == 0) then error('not a bit value (1 or 0): r=' .. r) end
   if f < 0 or f > 52 then error('field out of bounds: f=' .. f) end
   w = w or 1
@@ -184,6 +186,8 @@ function M.replace(n: number, f: number, r: number, w: number?): number
   low = _replace(low, f, r, 31 - f)
   return join64(low, high)
 end
+
+M.replace = replace
 
 --[=[
   Shifts `n` to the left by `i` bits (if `i` is negative, a right shift is performed instead).
@@ -225,6 +229,21 @@ local function rshift(n: number, i: number): number
 end
 
 M.rshift = rshift
+
+--[=[
+  Shifts `n` by `i` bits to the right (if `i` is negative, a left shift is performed instead). The
+  most significant bit of `n` is propagated during the shift. When `i` is larger then 52, returns a
+  number with all bits set to the sign bit of `n`. When `i` is smaller than `-52`, 0 is returned.
+  @param n number
+  @param i number
+  @return number
+]=]
+function M.arshift(n: number, i: number): number
+  if i < -52 then return 0 end
+  local sign = extract(n, 52)
+  if i > 52 then return sign == 1 and max53 or 0 end
+  return replace(rshift(n, i), 52, sign)
+end
 
 --[=[
   Rotates `n` to the left by `i` bits (if `i` is negative, a right rotate is performed instead);
