@@ -1,10 +1,12 @@
 --!strict
 
+local _and = bit32.band
 local _right = bit32.rshift
 local _left = bit32.lshift
 local _swap = bit32.byteswap
 local _rightzeros = bit32.countrz
 local _leftzeros = bit32.countlz
+local _replace = bit32.replace
 
 local _max = math.max
 
@@ -37,6 +39,31 @@ end
 local function inrange(r: number): boolean
   return -52 <= r and r <= 52
 end
+
+local function clampbits21(n: number): number
+  return _replace(n, 0, 20, 11)
+end
+
+--[=[
+  Shifts `n` to the left by `i` bits (if `i` is negative, a right shift is performed instead).
+  When `i` is outside of `[-52..52]` range, returns 0.
+  @param n number
+  @param i number
+  @return number
+]=]
+local function lshift(n: number, i: number): number
+  if i == 0 then return n end
+  if not inrange(i) then return 0 end
+  if i < 0 then return rshift(n, -i) end
+  if n <= max32 then return _left(n, i) end
+  local low, high = split64(n)
+  if i == 32 then return high end
+  if i > 32 then return join64(0, clampbits21(_left(high, i - 32))) end
+  high = _and(_left(high, i), _right(low, 32 - i))
+  return join64(_left(low, i), clampbits21(high))
+end
+
+M.lshift = lshift
 
 --[=[
   Shifts `n` to the right by `i` bits (if `i` is negative, a left shift is performed instead).
