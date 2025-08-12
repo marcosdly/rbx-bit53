@@ -1,3 +1,9 @@
+--[=[
+  All functions in the `bit53` library treat input numbers as 53-bit unsigned integers
+  in `[0..9007199254740991]` range. The bit positions start at 0 where 0 corresponds to the
+  least significant bit.
+]=]
+
 --!strict
 
 local _and = bit32.band
