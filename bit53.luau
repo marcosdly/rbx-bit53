@@ -67,6 +67,17 @@ end
 M.band = band
 
 --[=[
+  Performs a bitwise `and` of all input numbers, and return `true` if the result is not zero.
+  If the function is called with no arguments, true is returned.
+  @param ... number
+  @return boolean
+]=]
+function M.btest(...: number): boolean
+  -- FIX logically unnecessary expanding and unpacking of vararg
+  return band(_unpack({ ... })) ~= 0
+end
+
+--[=[
   Shifts `n` to the left by `i` bits (if `i` is negative, a right shift is performed instead).
   When `i` is outside of `[-52..52]` range, returns 0.
   @param n number
