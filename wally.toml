@@ -1,8 +1,8 @@
 [package]
-name = "marcosdly/rbx-bit"
-description = "Helper libraries for bit manipulation in Roblox Lua"
+name = "marcosdly/rbx-bit53"
+description = "Helper library for bit manipulation of 53-bit integers"
 version = "0.1.0"
 registry = "https://github.com/UpliftGames/wally-index"
 realm = "shared"
-repository = "https://github.com/marcosdly/rbx-bit"
-include = ['lib']
+repository = "https://github.com/marcosdly/rbx-bit53"
+include = ['bit53.luau']
