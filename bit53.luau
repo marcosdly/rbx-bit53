@@ -18,33 +18,30 @@ local _leftzeros = bit32.countlz
 local _replace = bit32.replace
 local _extract = bit32.extract
 
-local _max = math.max
-
-local w = 32
-local max32 = bit32.band()
+local max32 = _and()
 local max21 = _right(max32, 11)
 
-local function lshift32(x: number): number
-  return x * 2 ^ 32
+local function lshiftn(x: number, n: number): number
+  return x * 2 ^ n
 end
-
-local max53 = lshift32(max21) + max32
 
 local M = {}
 
 -- Split a 64-bit number into a 32-bit chunk and a 21-bit chunk
 -- Remaining bits are thrown away
 local function split64(n: number): (number, number)
-  local low = n % 2 ^ w
-  local high = (n - low) / 2 ^ w
-  return low, _max(high, max21)
+  local low = n % 2 ^ 32
+  local high = (n - low) / 2 ^ 32
+  return low, clampbits21(high)
 end
 
 -- Combine two 32-bit chunks into a 64-bit number
 -- Remaining bits are thrown away
 local function join64(low: number, high: number): number
-  return high * 2 ^ w + low
+  return lshiftn(high, 32) + low
 end
+
+local max53 = join64(max32, max21)
 
 local function inrange(r: number): boolean
   return -52 <= r and r <= 52
@@ -125,8 +122,7 @@ end
   @return boolean
 ]=]
 function M.btest(...: number): boolean
-  -- FIX logically unnecessary expanding and unpacking of vararg
-  return band(unpack({ ... })) ~= 0
+  return band(...) ~= 0
 end
 
 --[=[
@@ -147,7 +143,7 @@ local function extract(n: number, f: number, w: number?): number
     return _extract(high, f - 31)
   end
   local r = f + w - 1
-  if r > 52 then error('field out of bounds: f+w-1=%d' .. r) end
+  if r > 52 then error('field out of bounds: f+w-1=' .. r) end
   if r < 32 then return _extract(low, f, w) end
   if f >= 32 and r < 52 then return _extract(high, f, w) end
   local wl, fh = 31 - f, r - 31
@@ -183,7 +179,7 @@ local function replace(n: number, f: number, r: number, w: number?): number
     return _replace(high, f - 31, r)
   end
   local _r = f + w - 1
-  if _r > 52 then error('field out of bounds: f+w-1=%d' .. _r) end
+  if _r > 52 then error('field out of bounds: f+w-1=' .. _r) end
   if _r < 32 then return _replace(low, f, r, w) end
   high = _replace(high, 0, r, _r - 31)
   if f >= 32 and _r < 52 then return high end
