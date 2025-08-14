@@ -20,8 +20,6 @@ local _extract = bit32.extract
 
 local _max = math.max
 
-local _unpack = table.unpack
-
 local w = 32
 local max32 = bit32.band()
 local max21 = _right(max32, 11)
@@ -61,7 +59,7 @@ local function apply(func: (...number) -> number, argv: { number }): number
   for i, n in ipairs(argv) do
     low[i], high[i] = split64(n)
   end
-  return join64(func(_unpack(low)), func(_unpack(high)))
+  return join64(func(unpack(low)), func(unpack(high)))
 end
 
 --[=[
@@ -128,7 +126,7 @@ end
 ]=]
 function M.btest(...: number): boolean
   -- FIX logically unnecessary expanding and unpacking of vararg
-  return band(_unpack({ ... })) ~= 0
+  return band(unpack({ ... })) ~= 0
 end
 
 --[=[
