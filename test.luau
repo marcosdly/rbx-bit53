@@ -34,7 +34,7 @@ local function assertEqual(a: number, b: number, msg: string)
     passed += 1
   else
     failed += 1
-    print(getLogMessage('ASSERT', ok, tohex(a) .. ' ~= ' .. tohex(b), msg))
+    print(getLogMessage('ASSERT', false, tohex(a) .. ' ~= ' .. tohex(b), msg))
   end
 end
 
