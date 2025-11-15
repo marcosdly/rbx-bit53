@@ -7,41 +7,57 @@ local bit53 = require('./bit53')
 local max53 = 2 ^ 53 - 1
 local max32 = 2 ^ 32 - 1
 
-local passed, failed = 0, 0
+local function tohex(n: number): string
+  -- max53 in hex has string length 14
+  -- #string.format('%X', max53) == 14
+  return string.format('0x%014X', n)
+end
+
+print(tohex(0))
+
+local passed, failed, i = 0, 0, 0
+
+local function getLogMessage(kind: string, ok: boolean, subject: string, details: string?)
+  return string.format(
+    '%03d:%s:%s: %s%s',
+    i,
+    kind:upper(),
+    if ok then 'PASSED' else 'FAILED',
+    subject,
+    if details ~= nil then (' - ' .. details:lower()) else ''
+  )
+end
 
 local function assertEqual(a: number, b: number, msg: string)
-  if a ~= b then
+  i += 1
+  if a == b then
+    passed += 1
+  else
     failed += 1
-    print(
-      string.format(
-        'Assertion failed: %s ~= %s%s',
-        tostring(a),
-        tostring(b),
-        msg and (' - ' .. msg) or ''
-      )
-    )
-    return
+    print(getLogMessage('ASSERT', ok, tohex(a) .. ' ~= ' .. tohex(b), msg))
   end
-  passed += 1
 end
 
 local function assertTrue(cond: number | boolean, msg: string)
-  if not cond then
+  i += 1
+  local ok = not not cond
+  if ok then
+    passed += 1
+  else
     failed += 1
-    print('Assertion failed: condition is false' .. (msg and (' - ' .. msg) or ''))
-    return
+    print(getLogMessage('ASSERT', ok, tostring(cond), msg))
   end
-  passed += 1
 end
 
 local function test(title: string, callback: () -> nil)
-  local msg = string.format(':: %s ...', title)
-  print(msg)
   local startPassed, startFailed = passed, failed
+  local prefix = string.format(':: TEST: %s ...', title)
+  print(prefix .. ' BEGIN')
   callback()
+  print(prefix .. ' END')
   local length = (passed + failed) - (startPassed + startFailed)
   if length == 0 then error(string.format("No tests ran for '%s'", title)) end
-  print(string.format(msg .. ' RESULT %s/%s', passed - startPassed, length))
+  print(prefix .. string.format(' RESULT %s/%s', passed - startPassed, length))
 end
 
 test('band', function()
