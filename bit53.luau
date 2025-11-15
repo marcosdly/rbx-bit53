@@ -70,15 +70,13 @@ end
   @param ... number
   @return number
 ]=]
-local function band(...: number): number
+function M.band(...: number): number
   local argv: { number } = { ... }
   local argc: number = #argv
   if argc == 0 then return max53 end
   if argc == 1 then return argv[1] end
   return apply(_and, argv)
 end
-
-M.band = band
 
 --[=[
   Performs a bitwise `not` on the input number and returns the result.
@@ -128,7 +126,7 @@ end
 ]=]
 function M.btest(...: number): boolean
   -- FIX logically unnecessary expanding and unpacking of vararg
-  return band(_unpack({ ... })) ~= 0
+  return M.band(_unpack({ ... })) ~= 0
 end
 
 --[=[
@@ -140,7 +138,7 @@ end
   @param w number?
   @return number
 ]=]
-local function extract(n: number, f: number, w: number?): number
+function M.extract(n: number, f: number, w: number?): number
   if f < 0 or f > 52 then error('field out of bounds: f=' .. f) end
   w = w or 1
   local low, high = split64(n)
@@ -153,7 +151,6 @@ local function extract(n: number, f: number, w: number?): number
   if r < 32 then return _extract(low, f, w) end
   if f >= 32 and r < 52 then return _extract(high, f, w) end
   local wl, fh = 31 - f, r - 31
-  -- low  = ***---- => ----***
   -- high = ----*** => ----*** => -***---
   low, high = _extract(low, f, wl), _left(_extract(high, 0, fh), fh)
   --[[   -***--- UNION
@@ -161,8 +158,6 @@ local function extract(n: number, f: number, w: number?): number
   return -****** ]]
   return join64(low, high)
 end
-
-M.extract = extract
 
 --[=[
   Replaces bits of `n` at position `f` and width `w` with `r`, and returns the resulting number.
@@ -175,7 +170,7 @@ M.extract = extract
   @param w number?
   @return number
 ]=]
-local function replace(n: number, f: number, r: number, w: number?): number
+function M.replace(n: number, f: number, r: number, w: number?): number
   if not (r == 1 or r == 0) then error('not a bit value (1 or 0): r=' .. r) end
   if f < 0 or f > 52 then error('field out of bounds: f=' .. f) end
   w = w or 1
@@ -193,8 +188,6 @@ local function replace(n: number, f: number, r: number, w: number?): number
   return join64(low, high)
 end
 
-M.replace = replace
-
 --[=[
   Shifts `n` to the left by `i` bits (if `i` is negative, a right shift is performed instead).
   When `i` is outside of `[-52..52]` range, returns 0.
@@ -202,10 +195,10 @@ M.replace = replace
   @param i number
   @return number
 ]=]
-local function lshift(n: number, i: number): number
+function M.lshift(n: number, i: number): number
   if i == 0 then return n end
   if not inrange(i) then return 0 end
-  if i < 0 then return rshift(n, -i) end
+  if i < 0 then return M.rshift(n, -i) end
   if n <= max32 then return _left(n, i) end
   local low, high = split64(n)
   if i == 32 then return high end
@@ -214,8 +207,6 @@ local function lshift(n: number, i: number): number
   return join64(_left(low, i), clampbits21(high))
 end
 
-M.lshift = lshift
-
 --[=[
   Shifts `n` to the right by `i` bits (if `i` is negative, a left shift is performed instead).
   When `i` is outside of `[-52..52]` range, returns 0.
@@ -223,18 +214,16 @@ M.lshift = lshift
   @param i number
   @return number
 ]=]
-local function rshift(n: number, i: number): number
+function M.rshift(n: number, i: number): number
   if i == 0 then return n end
   if not inrange(i) then return 0 end
-  if i < 0 then return lshift(n, -i) end
+  if i < 0 then return M.lshift(n, -i) end
   if n <= max32 then return _right(n, i) end
   local low, high = split64(n)
   if i == 21 then return low end
   if i > 21 then return _right(low, i - 21) end
   return join64(low, _right(high, i))
 end
-
-M.rshift = rshift
 
 --[=[
   Shifts `n` by `i` bits to the right (if `i` is negative, a left shift is performed instead). The
@@ -246,9 +235,9 @@ M.rshift = rshift
 ]=]
 function M.arshift(n: number, i: number): number
   if i < -52 then return 0 end
-  local sign = extract(n, 52)
+  local sign = M.extract(n, 52)
   if i > 52 then return sign == 1 and max53 or 0 end
-  return replace(rshift(n, i), 52, sign)
+  return M.replace(M.rshift(n, i), 52, sign)
 end
 
 --[=[
@@ -258,14 +247,12 @@ end
   @param i number
   @return number
 ]=]
-local function lrotate(n: number, i: number): number
-  if i < 0 then return rrotate(n, -i) end
+function M.lrotate(n: number, i: number): number
+  if i < 0 then return M.rrotate(n, -i) end
   i = i % 53
   if i == 0 then return n end
-  return band(lshift(n, i), rshift(n, 53 - i))
+  return M.band(M.lshift(n, i), M.rshift(n, 53 - i))
 end
-
-M.lrotate = lrotate
 
 --[=[
   Rotates `n` to the right by `i` bits (if `i` is negative, a left rotate is performed instead);
@@ -274,14 +261,12 @@ M.lrotate = lrotate
   @param i number
   @return number
 ]=]
-local function rrotate(n: number, i: number): number
-  if i < 0 then return lrotate(n, -i) end
+function M.rrotate(n: number, i: number): number
+  if i < 0 then return M.lrotate(n, -i) end
   i = i % 53
   if i == 0 then return n end
-  return band(rshift(n, i), lshift(n, 53 - i))
+  return M.band(M.rshift(n, i), M.lshift(n, 53 - i))
 end
-
-M.rrotate = rrotate
 
 --[=[
   Returns the number of consecutive zero bits in the 53-bit representation of `n` starting
